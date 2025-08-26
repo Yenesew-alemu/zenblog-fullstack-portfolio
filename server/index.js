@@ -12,7 +12,14 @@ require('dotenv').config(); // Loads environment variables from .env file
 const app = express();
 
 // Middleware setup
-app.use(cors()); // Enable Cross-Origin Resource Sharing
+// Define the allowed origin (your frontend's URL)
+const corsOptions = {
+  origin: 'https://zenblog-client.onrender.com',
+  optionsSuccessStatus: 200 // For legacy browser support
+};
+
+// Use the cors middleware with our specific options
+app.use(cors(corsOptions));
 app.use(express.json()); // Enable the Express app to parse JSON formatted request bodies
 app.use('/api/auth', authRoutes);
 app.use('/api/posts', postRoutes);
