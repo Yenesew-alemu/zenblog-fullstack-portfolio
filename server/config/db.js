@@ -8,11 +8,11 @@ const pool = new Pool({
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME,
   port: process.env.DB_PORT,
-  // Supabase requires SSL
+  // Supabase requires a secure SSL connection
   ssl: {
     require: true,
   },
 });
 
-// We export the entire pool now
+// We export the pool to be used by our route files
 module.exports = pool;
