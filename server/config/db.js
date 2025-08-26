@@ -12,6 +12,7 @@ const pool = new Pool({
   ssl: {
     require: true,
   },
+  family: 4,
 });
 
 // We export the pool to be used by our route files
