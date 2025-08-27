@@ -1,4 +1,4 @@
-// /server/config/db.js (New PostgreSQL version)
+// /server/config/db.js
 const { Pool } = require('pg');
 require('dotenv').config();
 
@@ -8,12 +8,11 @@ const pool = new Pool({
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME,
   port: process.env.DB_PORT,
-  // Supabase requires a secure SSL connection
   ssl: {
     require: true,
   },
-  family: 4,
+  // THIS LINE MUST BE HERE
+  family: 4, 
 });
 
-// We export the pool to be used by our route files
 module.exports = pool;
