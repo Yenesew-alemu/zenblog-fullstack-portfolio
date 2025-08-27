@@ -14,11 +14,9 @@ const app = express();
 // Middleware setup
 // Define the allowed origin (your frontend's URL)
 const corsOptions = {
-  origin: 'https://zenblog-client.onrender.com',
-  optionsSuccessStatus: 200 // For legacy browser support
+  origin: 'https://zenblog-client.onrender.com', // Your live frontend URL
+  optionsSuccessStatus: 200
 };
-
-// Use the cors middleware with our specific options
 app.use(cors(corsOptions));
 app.use(express.json()); // Enable the Express app to parse JSON formatted request bodies
 app.use('/api/auth', authRoutes);
