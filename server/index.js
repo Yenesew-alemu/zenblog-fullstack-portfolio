@@ -1,39 +1,32 @@
-// Import required packages
+// /server/index.js
 const express = require('express');
 const cors = require('cors');
+require('dotenv').config();
+
 const authRoutes = require('./routes/auth');
 const postRoutes = require('./routes/posts');
 const categoryRoutes = require('./routes/categories');
 const userRoutes = require('./routes/users');
 const utilRoutes = require('./routes/utils');
-require('dotenv').config(); // Loads environment variables from .env file
 
-// Create an Express application
 const app = express();
 
-// Middleware setup
-// Define the allowed origin (your frontend's URL)
-const corsOptions = {
-  origin: 'https://zenblog-client.onrender.com', // Your live frontend URL
-  optionsSuccessStatus: 200
-};
-app.use(cors(corsOptions));
-app.use(express.json()); // Enable the Express app to parse JSON formatted request bodies
+// A simple CORS setup is enough for local development
+app.use(cors());
+
+app.use(express.json());
+
 app.use('/api/auth', authRoutes);
 app.use('/api/posts', postRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api', utilRoutes);
 
-// A simple test route to make sure the server is running
 app.get('/', (req, res) => {
   res.send('Hello from the ZenBlog API!');
 });
 
-// Get the port from environment variables, with a default of 5000
 const PORT = process.env.PORT || 5000;
-
-// Start the server
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });

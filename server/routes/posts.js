@@ -1,4 +1,4 @@
-// /server/routes/posts.js (PostgreSQL version)
+// /server/routes/posts.js
 const express = require('express');
 const router = express.Router();
 const db = require('../config/db');
@@ -14,13 +14,13 @@ router.get('/', async (req, res) => {
     `;
     const queryParams = [];
     if (categoryId) {
-      query += ` WHERE p.category_id = $${queryParams.length + 1}`;
+      query += ' WHERE p.category_id = ?';
       queryParams.push(categoryId);
     }
-    query += ` ORDER BY p.created_at DESC LIMIT $${queryParams.length + 1}`;
+    query += ' ORDER BY p.created_at DESC LIMIT ?';
     queryParams.push(limit);
-    const result = await db.query(query, queryParams);
-    res.json(result.rows);
+    const [posts] = await db.query(query, queryParams);
+    res.json(posts);
   } catch (err) { console.error(err.message); res.status(500).send('Server error'); }
 });
 
@@ -29,19 +29,19 @@ router.get('/:slug', async (req, res) => {
     const query = `
       SELECT p.id, p.title, p.slug, p.content, p.featured_image_url, p.created_at, u.username as author_name, u.id as author_id, c.name as category_name, c.id as category_id
       FROM posts p LEFT JOIN users u ON p.author_id = u.id LEFT JOIN categories c ON p.category_id = c.id
-      WHERE p.slug = $1;
+      WHERE p.slug = ?;
     `;
-    const result = await db.query(query, [req.params.slug]);
-    if (result.rows.length === 0) return res.status(404).json({ message: 'Post not found.' });
-    res.json(result.rows[0]);
+    const [rows] = await db.query(query, [req.params.slug]);
+    if (rows.length === 0) return res.status(404).json({ message: 'Post not found.' });
+    res.json(rows[0]);
   } catch (err) { console.error(err.message); res.status(500).send('Server error'); }
 });
 
 router.get('/id/:id', async (req, res) => {
   try {
-    const result = await db.query('SELECT * FROM posts WHERE id = $1', [req.params.id]);
-    if (result.rows.length === 0) return res.status(404).json({ message: 'Post not found.' });
-    res.json(result.rows[0]);
+    const [rows] = await db.query('SELECT * FROM posts WHERE id = ?', [req.params.id]);
+    if (rows.length === 0) return res.status(404).json({ message: 'Post not found.' });
+    res.json(rows[0]);
   } catch (err) { console.error(err.message); res.status(500).send('Server error'); }
 });
 
@@ -50,11 +50,11 @@ router.post('/', authMiddleware, async (req, res) => {
   if (!title || !content) return res.status(400).json({ message: 'Title and content are required.' });
   const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
   try {
-    const query = 'INSERT INTO posts (title, slug, content, author_id, category_id, featured_image_url, featured_image_public_id) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id';
-    const result = await db.query(query, [title, slug, content, req.user.id, category_id, featured_image_url, featured_image_public_id]);
-    res.status(201).json({ message: 'Post created successfully', postId: result.rows[0].id });
+    const query = 'INSERT INTO posts (title, slug, content, author_id, category_id, featured_image_url, featured_image_public_id) VALUES (?, ?, ?, ?, ?, ?, ?)';
+    const [result] = await db.query(query, [title, slug, content, req.user.id, category_id, featured_image_url, featured_image_public_id]);
+    res.status(201).json({ message: 'Post created successfully', postId: result.insertId });
   } catch (err) {
-    if (err.code === '23505') return res.status(409).json({ message: 'A post with this title or slug already exists.' });
+    if (err.code === 'ER_DUP_ENTRY') return res.status(409).json({ message: 'A post with this title or slug already exists.' });
     console.error(err.message); res.status(500).send('Server error');
   }
 });
@@ -64,20 +64,20 @@ router.put('/:id', authMiddleware, async (req, res) => {
   const postId = req.params.id;
   const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
   try {
-    const query = 'UPDATE posts SET title = $1, slug = $2, content = $3, category_id = $4, featured_image_url = $5, featured_image_public_id = $6 WHERE id = $7 AND author_id = $8';
-    const result = await db.query(query, [title, slug, content, category_id, featured_image_url, featured_image_public_id, postId, req.user.id]);
-    if (result.rowCount === 0) return res.status(404).json({ message: 'Post not found or user not authorized.' });
+    const query = 'UPDATE posts SET title = ?, slug = ?, content = ?, category_id = ?, featured_image_url = ?, featured_image_public_id = ? WHERE id = ? AND author_id = ?';
+    const [result] = await db.query(query, [title, slug, content, category_id, featured_image_url, featured_image_public_id, postId, req.user.id]);
+    if (result.affectedRows === 0) return res.status(404).json({ message: 'Post not found or user not authorized.' });
     res.json({ message: 'Post updated successfully' });
   } catch (err) {
-    if (err.code === '23505') return res.status(409).json({ message: 'A post with this title or slug already exists.' });
+    if (err.code === 'ER_DUP_ENTRY') return res.status(409).json({ message: 'A post with this title or slug already exists.' });
     console.error(err.message); res.status(500).send('Server error');
   }
 });
 
 router.delete('/:id', authMiddleware, async (req, res) => {
   try {
-    const result = await db.query('DELETE FROM posts WHERE id = $1 AND author_id = $2', [req.params.id, req.user.id]);
-    if (result.rowCount === 0) return res.status(404).json({ message: 'Post not found or user not authorized.' });
+    const [result] = await db.query('DELETE FROM posts WHERE id = ? AND author_id = ?', [req.params.id, req.user.id]);
+    if (result.affectedRows === 0) return res.status(404).json({ message: 'Post not found or user not authorized.' });
     res.json({ message: 'Post deleted successfully' });
   } catch (err) { console.error(err.message); res.status(500).send('Server error'); }
 });
