@@ -1,54 +1,25 @@
-// /server/routes/users.js
-
 const express = require('express');
 const router = express.Router();
 const db = require('../config/db');
-
-// Define user-facing routes here...
-// GET /api/users/:id - Fetch a user's public profile
-router.get('/:id', async (req, res) => {
+router.get('/search', async (req, res) => {
+  const queryTerm = req.query.q;
+  if (!queryTerm) return res.status(400).json({ message: 'Search query is required.' });
   try {
-    // We explicitly select only the columns we want to expose publicly.
-    const query = 'SELECT id, username, bio, profile_picture_url FROM users WHERE id = ?';
-    const [rows] = await db.query(query, [req.params.id]);
-
-    if (rows.length === 0) {
-      return res.status(404).json({ message: 'User not found.' });
-    }
-
-    const userProfile = rows[0];
-    res.json(userProfile);
-  } catch (err) {
-    console.error(err.message);
-    res.status(500).send('Server Error');
-  }
+    const query = `SELECT p.id, p.title, p.slug, LEFT(p.content, 150) as excerpt, p.created_at, u.username as author_name, c.name as category_name FROM posts p LEFT JOIN users u ON p.author_id = u.id LEFT JOIN categories c ON p.category_id = c.id WHERE p.title ILIKE $1 OR p.content ILIKE $1 ORDER BY p.created_at DESC;`;
+    const searchTerm = `%${queryTerm}%`;
+    const result = await db.query(query, [searchTerm]);
+    res.json(result.rows);
+  } catch (err) { console.error(err.message); res.status(500).send('Server Error'); }
 });
-// GET /api/users/:id/posts - Fetch all posts for a specific user
-router.get('/:id/posts', async (req, res) => {
-  try {
-    // This query is very similar to our other post-listing queries.
-    const query = `
-      SELECT 
-        p.id, 
-        p.title, 
-        p.slug, 
-        LEFT(p.content, 150) as excerpt,
-        p.featured_image_url, 
-        p.created_at, 
-        u.username as author_name, 
-        c.name as category_name 
-      FROM posts p
-      LEFT JOIN users u ON p.author_id = u.id
-      LEFT JOIN categories c ON p.category_id = c.id
-      WHERE p.author_id = ?
-      ORDER BY p.created_at DESC;
-    `;
-
-    const [posts] = await db.query(query, [req.params.id]);
-    res.json(posts);
-  } catch (err) {
-    console.error(err.message);
-    res.status(500).send('Server Error');
-  }
+router.post('/contact', (req, res) => {
+  const { name, email, subject, message } = req.body;
+  if (!name || !email || !subject || !message) return res.status(400).json({ message: 'All fields are required.' });
+  console.log('--- New Contact Form Submission ---');
+  console.log(`Name: ${name}`);
+  console.log(`Email: ${email}`);
+  console.log(`Subject: ${subject}`);
+  console.log(`Message: ${message}`);
+  console.log('---------------------------------');
+  res.status(200).json({ message: 'Thank you for your message.' });
 });
 module.exports = router;

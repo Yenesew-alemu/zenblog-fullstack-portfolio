@@ -1,12 +1,12 @@
-// /server/config/db.js
-const mysql = require('mysql2');
+const { Pool } = require('pg');
 require('dotenv').config();
-
-const pool = mysql.createPool({
-  host: process.env.DB_HOST,      // Should be 'localhost' from your .env
-  user: process.env.DB_USER,      // Should be 'root'
-  password: process.env.DB_PASSWORD, // Should be your XAMPP/MySQL password
-  database: process.env.DB_NAME    // Should be 'zenblog_db'
+const pool = new Pool({
+  host: process.env.DB_HOST,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
+  port: process.env.DB_PORT,
+  ssl: { require: true },
+  family: 4,
 });
-
-module.exports = pool.promise();
+module.exports = pool;
